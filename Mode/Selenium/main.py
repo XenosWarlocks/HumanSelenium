@@ -22,7 +22,7 @@ class ContactScraper:
             r"{last}@",
             r"{first}\.{last}@"
         ]
-        self.organization_domain = "law.muni.cz"
+        self.organization_domain = ""
 
         options = Options()
         options.headless = True
