@@ -134,7 +134,7 @@ class ContactScraper:
                             if th and td:
                                 if 'Phone' in th.text:
                                     phone_number = self.extract_phone_number(td)
-                                    if phone_number and (name, phone_number, '-', profile_url, '-') not in self.processed_entries:
+                                    if phone_number and phone_number != '-':
                                         print(f"Phone number found: {phone_number}")
                                         self.processed_entries.add((name, phone_number, '-', profile_url, '-'))
 
@@ -143,6 +143,12 @@ class ContactScraper:
 
                                         self.write_to_csv(name, phone_number, '-', profile_url, '-')
                                         phone_number_found = True
+                                    else:
+                                        print(f"No phone number found for {name}. Recording '-'")
+                                        self.write_to_csv(name, '-', '-', profile_url, '-')
+                                        with open('phone_numbers.txt', 'a') as phone_file:
+                                            phone_file.write('-\n')
+
                                 elif 'E‑mail' in th.text:
                                     email_address = self.extract_email_address(td)
                                     if email_address and (name, '-', email_address, profile_url, '-') not in self.processed_entries:
@@ -163,17 +169,11 @@ class ContactScraper:
                     else:
                         break  # If no exception occurred, exit the retry loop
 
-                    if not phone_number_found:
-                        print(f"No phone number found for {name}. Recording '-'")
-                        self.write_to_csv(name, '-', '-', profile_url, '-')
-                        with open('phone_numbers.txt', 'a') as phone_file:
-                            phone_file.write('-' + '\n')
-
                     if not email_found:
                         print(f"No email found for {name}. Recording '-'")
                         self.write_to_csv(name, '-', '-', profile_url, '-')
                         with open('emails.txt', 'a') as email_file:
-                            email_file.write('-' + '\n')
+                            email_file.write('-\n')
 
                 except StaleElementReferenceException:
                     print("Stale element reference, retrying profile interaction...")
@@ -189,13 +189,13 @@ class ContactScraper:
             phone_number = a_tag_tel.get_attribute('href').split('tel:')[-1]
             return phone_number
         except NoSuchElementException:
-            return None
+            return '-'
 
     def extract_email_address(self, td):
         try:
             a_tag_mailto = td.find_element(By.CSS_SELECTOR, 'a[href^="mailto:"]')
             email_address = a_tag_mailto.get_attribute('href').split('mailto:')[-1]
-            print(f"Email address found: {email_address}")
+            # print(f"Email address found: {email_address}")
             return email_address
         except NoSuchElementException:
             return None
@@ -214,16 +214,43 @@ class ContactScraper:
         return "Unknown Pattern"
 
     def write_to_csv(self, name, phone_number, email_address, profile_url, email_pattern):
+        entry_key = (name, '-', '-', profile_url, '-')
+        
         # Check if the entry already exists to avoid duplicates
+        with open(self.csv_filename, 'r', newline='') as csvfile:
+            reader = csv.reader(csvfile)
+            rows = list(reader)
+            found = False
+            
+            for row in rows:
+                if tuple(row[:4]) == entry_key:
+                    row[2] = email_address  # Update email_address
+                    row[4] = email_pattern  # Update email_pattern
+                    found = True
+                    break
+            
+            if not found:
+                rows.append([name, phone_number, email_address, profile_url, email_pattern])
+
+        # Rewrite the CSV file with updated or new data
+        with open(self.csv_filename, 'w', newline='') as csvfile:
+            writer = csv.writer(csvfile)
+            writer.writerows(rows)
+
+        # Check if the entry is already processed to avoid duplicates
         entry_key = (name, phone_number, email_address, profile_url, email_pattern)
         if entry_key not in self.processed_entries:
             self.processed_entries.add(entry_key)
-            with open(self.csv_filename, 'a', newline='') as csvfile:
-                writer = csv.writer(csvfile)
-                writer.writerow([name, phone_number, email_address, profile_url, email_pattern])
 
-    def close(self):
-        self.driver.quit()
+        # Write to phone_numbers.txt if phone_number is valid
+        if phone_number and phone_number != '-':
+            with open('phone_numbers.txt', 'a') as phone_file:
+                phone_file.write(phone_number + '\n')
+
+
+
+        def close(self):
+            self.driver.quit()
 
 # usage:
 organization_domain = input("Please enter the organization domain: ")
