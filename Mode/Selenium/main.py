@@ -47,14 +47,22 @@ class ContactScraper:
             self.driver.get(self.base_url)
             wait = WebDriverWait(self.driver, 10)
             li_tags = wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, 'li.crossroad-links__item')))
+            department_urls = []
             for li in li_tags:
                 try:
                     a_tag = li.find_element(By.TAG_NAME, 'a')
                     href = a_tag.get_attribute('href')
                     if href:
-                        self.visit_department_url(href)
+                        department_urls.append(href)
                 except NoSuchElementException:
                     print(f"No <a> tag found in <li> element: {li}")
+
+            for department_url in department_urls:
+                self.visit_department_url(department_url)
+
+            # After visiting all departments, navigate back to the base URL
+            self.driver.get(self.base_url)
+
         except Exception as e:
             print(f"An error occurred: {e}")
 
@@ -71,6 +79,7 @@ class ContactScraper:
                     dept_file.write(f"{department_name} - {department_url}\n")
 
                 li_tags = wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, 'li.crossroad-links__item')))
+                names_to_process = []
                 for li in li_tags:
                     try:
                         a_tag = li.find_element(By.TAG_NAME, 'a')
@@ -89,12 +98,17 @@ class ContactScraper:
                                         name_file.write(name + '\n')
 
                                     full_url = urljoin(department_url, href)
-                                    self.visit_profile_url(full_url, name)
-                                    
-                                    # Return to the department page to continue with the next name
-                                    self.driver.back()
+                                    names_to_process.append((full_url, name))
+
                     except NoSuchElementException:
                         print(f"No <a> tag found in <li> element: {li}")
+
+                for full_url, name in names_to_process:
+                    self.visit_profile_url(full_url, name)
+
+                # After processing all names, navigate back to department URL
+                self.driver.get(department_url)
+
         except Exception as e:
             print(f"An error occurred while visiting the department URL: {e}")
 
@@ -198,3 +212,6 @@ base_website_url = input("Please enter the base website URL: ")
 scraper = ContactScraper(base_website_url)
 scraper.visit_website()
 scraper.close()
+
+
+################################################################
