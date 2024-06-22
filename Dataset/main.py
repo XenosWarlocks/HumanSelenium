@@ -15,6 +15,7 @@ import time
 class ContactScraper:
     def __init__(self, base_url):
         self.base_url = base_url
+        self.organization_domain = organization_domain
         self.visited_departments = set()
         self.processed_names = set()
         self.processed_phone_numbers = set()
@@ -22,7 +23,6 @@ class ContactScraper:
             r"{last}@",
             r"{first}\.{last}@"
         ]
-        self.organization_domain = "law.muni.cz"
 
         options = Options()
         options.headless = True
@@ -34,7 +34,7 @@ class ContactScraper:
 
         if not os.path.exists('contacts.csv'):
             with open('contacts.csv', 'w', newline='') as csvfile:
-                fieldnames = ['Name', 'Phone Number', 'Profile URL', 'Email Pattern']
+                fieldnames = ['Name', 'Phone Number', 'Email', 'Profile URL', 'Email Pattern']
                 writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
                 writer.writeheader()
 
@@ -48,6 +48,7 @@ class ContactScraper:
             wait = WebDriverWait(self.driver, 10)
             li_tags = wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, 'li.crossroad-links__item')))
             department_urls = []
+
             for li in li_tags:
                 try:
                     a_tag = li.find_element(By.TAG_NAME, 'a')
@@ -80,6 +81,7 @@ class ContactScraper:
 
                 li_tags = wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, 'li.crossroad-links__item')))
                 names_to_process = []
+
                 for li in li_tags:
                     try:
                         a_tag = li.find_element(By.TAG_NAME, 'a')
@@ -111,6 +113,7 @@ class ContactScraper:
 
         except Exception as e:
             print(f"An error occurred while visiting the department URL: {e}")
+
 
     def visit_profile_url(self, profile_url, name):
         try:
@@ -207,11 +210,9 @@ class ContactScraper:
     def close(self):
         self.driver.quit()
 
-# Example usage:
+# usage:
+organization_domain = input("Please enter the organization domain: ")
 base_website_url = input("Please enter the base website URL: ")
 scraper = ContactScraper(base_website_url)
 scraper.visit_website()
 scraper.close()
-
-
-################################################################
