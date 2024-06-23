@@ -34,6 +34,14 @@ This Python script utilizes Selenium to scrape contact information from a websit
 4. Error Handling:
    - The script includes error handling for various exceptions (e.g., `NoSuchElementException`, `StaleElementReferenceException`) to ensure robustness.
 
+## Project Update - Handling Duplicate Data and New Feature
+1. New Issue: Duplicate Data
+   - I encountered an issue where duplicate entries were causing inconsistencies in our output files. This was particularly challenging when processing large datasets, such as CSV files containing contact information.
+2. Solution Implemented
+   - To overcome this issue, I enhanced our script to check for existing entries before writing to the output file. By leveraging Python's `defaultdict` from the `collections` module, I efficiently managed and combined rows based on unique identifiers, ensuring that each entry is processed only once. This improvement ensures data integrity and reduces redundancy in the output.
+3. New Feature Implemented
+   - In addition to addressing duplicate data, I have introduced a new feature that allows seamless integration with the `gen_files` folder. All generated files, including the input CSV (`contacts.csv`) and the output CSV (`output.csv`), are now managed within the `gen_files`. Additionally, the script reads input files directly from the `gen_files` directory and writes the output CSV file (`output.csv`) within the same folder. This streamlined approach enhances usability and maintains organization within the project structure.
+
 ## Advanced Options
 - Customization: Modify CSS selectors (`By.CSS_SELECTOR`) within the script to match the HTML structure of the target website.
 - Logging: Detailed logging of visited URLs and processed entries to `departments.txt` and other log files.
